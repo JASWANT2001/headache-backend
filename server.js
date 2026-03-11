@@ -6,7 +6,7 @@ import { connectDB } from './db.js';
 // Import Routes
 import authRoutes from './routes/auth.js';
 import patientRoutes from './routes/patients.js';
-import dashboardRoutes from './routes/dashboard.js'; // 👈 ADD THIS
+import dashboardRoutes from './routes/dashboard.js'; 
 
 dotenv.config();
 
