@@ -8,16 +8,26 @@ const userSchema = new mongoose.Schema({
   phoneNumber: { type: String, required: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['doctor', 'specialist'], default: 'doctor' },
-location: { type: String, default: '' }, // This will store STATE
-district: { type: String, default: '' }, // NEW - stores district
-instituteName: { type: String, default: '' },
-instituteType: { type: String, default: '' },
-  numberOfPatients: { type: Number, default: 0 },
+  location: { type: String, default: '' },
+  district: { type: String, default: '' },
+  instituteName: { type: String, default: '' },
+  instituteType: { type: String, default: '' },
+
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: null },
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },  // ✅ ADD THIS
+  toObject: { virtuals: true }  // ✅ ADD THIS
+});
+
+// ✅ ADD THIS VIRTUAL FIELD
+userSchema.virtual('numberOfPatients', {
+  ref: 'Patient',
+  localField: '_id',
+  foreignField: 'createdBy',
+  count: true
 });
 
 // Hash password before saving

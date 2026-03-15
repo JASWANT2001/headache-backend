@@ -32,82 +32,82 @@ router.get('/stats', auth, async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const activeProviderIds = await Patient.distinct('createdBy', {
-      createdAt: { $gte: sevenDaysAgo }
+    const activeProviders = await User.countDocuments({
+      role: { $in: ['doctor', 'specialist'] },
+      lastLogin: { $gte: sevenDaysAgo }
     });
-    const activeProviders = activeProviderIds.length;
 
     // 5️⃣ AVERAGE PATIENTS PER USER
-    const avgPatientsPerUser = totalUsers > 0 
-      ? (totalPatients / totalUsers).toFixed(1) 
+    const avgPatientsPerUser = totalUsers > 0
+      ? (totalPatients / totalUsers).toFixed(1)
       : 0;
 
     // 6️⃣ TOP PERFORMING PROVIDERS
- const topProviders = await Patient.aggregate([
-  {
-    $group: {
-      _id: '$createdBy',         // this is a String
-      patientsCreated: { $count: {} },
-      lastPatientDate: { $max: '$createdAt' }
-    }
-  },
-  {
-    $addFields: {
-      createdByObjectId: {
-        $convert: {
-          input: '$_id',
-          to: 'objectId',
-          onError: null,          // "admin-001" strings will become null
-          onNull: null
+    const topProviders = await Patient.aggregate([
+      {
+        $group: {
+          _id: '$createdBy',         // this is a String
+          patientsCreated: { $count: {} },
+          lastPatientDate: { $max: '$createdAt' }
         }
+      },
+      {
+        $addFields: {
+          createdByObjectId: {
+            $convert: {
+              input: '$_id',
+              to: 'objectId',
+              onError: null,          // "admin-001" strings will become null
+              onNull: null
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdByObjectId',   // now matches users._id
+          foreignField: '_id',
+          as: 'doctorInfo'
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          providerName: {
+            $cond: {
+              if: { $gt: [{ $size: '$doctorInfo' }, 0] },
+              then: { $arrayElemAt: ['$doctorInfo.username', 0] },
+              else: 'Admin'          // fallback for admin-001 or unknown
+            }
+          },
+          email: {
+            $cond: {
+              if: { $gt: [{ $size: '$doctorInfo' }, 0] },
+              then: { $arrayElemAt: ['$doctorInfo.email', 0] },
+              else: 'admin@system'
+            }
+          },
+          patientsCreated: 1,
+          lastPatientDate: 1,
+          isActiveToday: {
+            $gte: [
+              '$lastPatientDate',
+              new Date(new Date().setHours(0, 0, 0, 0))
+            ]
+          },
+          isActiveThisWeek: {
+            $gte: ['$lastPatientDate', sevenDaysAgo]
+          }
+        }
+      },
+      {
+        $sort: { patientsCreated: -1 }
+      },
+      {
+        $limit: 10
       }
-    }
-  },
-  {
-    $lookup: {
-      from: 'users',
-      localField: 'createdByObjectId',   // now matches users._id
-      foreignField: '_id',
-      as: 'doctorInfo'
-    }
-  },
-  {
-    $project: {
-      _id: 1,
-      providerName: {
-        $cond: {
-          if: { $gt: [{ $size: '$doctorInfo' }, 0] },
-          then: { $arrayElemAt: ['$doctorInfo.username', 0] },
-          else: 'Admin'          // fallback for admin-001 or unknown
-        }
-      },
-      email: {
-        $cond: {
-          if: { $gt: [{ $size: '$doctorInfo' }, 0] },
-          then: { $arrayElemAt: ['$doctorInfo.email', 0] },
-          else: 'admin@system'
-        }
-      },
-      patientsCreated: 1,
-      lastPatientDate: 1,
-      isActiveToday: {
-        $gte: [
-          '$lastPatientDate',
-          new Date(new Date().setHours(0, 0, 0, 0))
-        ]
-      },
-      isActiveThisWeek: {
-        $gte: ['$lastPatientDate', sevenDaysAgo]
-      }
-    }
-  },
-  {
-    $sort: { patientsCreated: -1 }
-  },
-  {
-    $limit: 10
-  }
-]);
+    ]);
 
     // Format last active status
     const formattedTopProviders = topProviders.map(provider => {
