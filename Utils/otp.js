@@ -2,16 +2,20 @@ import crypto from 'crypto';
 import twilio from 'twilio';
 import nodemailer from 'nodemailer';
 
+
 // In-memory OTP storage (use Redis in production)
 const otpStore = new Map();
 
+
 // OTP Configuration
 const OTP_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
 
 // Generate OTP
 export const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
+
 
 // Store OTP with expiry
 export const storeOTP = (identifier, otp) => {
@@ -22,32 +26,39 @@ export const storeOTP = (identifier, otp) => {
   });
 };
 
+
 // Verify OTP
 export const verifyOTP = (identifier, otp) => {
   const stored = otpStore.get(identifier);
 
+
   if (!stored) {
     return { success: false, message: 'OTP not found or expired' };
   }
+
 
   if (Date.now() > stored.expiresAt) {
     otpStore.delete(identifier);
     return { success: false, message: 'OTP has expired' };
   }
 
+
   if (stored.attempts >= 3) {
     otpStore.delete(identifier);
     return { success: false, message: 'Too many failed attempts' };
   }
+
 
   if (stored.otp !== otp) {
     stored.attempts++;
     return { success: false, message: 'Invalid OTP' };
   }
 
+
   otpStore.delete(identifier);
   return { success: true, message: 'OTP verified successfully' };
 };
+
 
 // ========== EMAIL OTP (Nodemailer) ==========
 export const sendEmailOTP = async (email, otp) => {
@@ -59,6 +70,7 @@ export const sendEmailOTP = async (email, otp) => {
         pass: process.env.EMAIL_PASSWORD
       }
     });
+
 
     const mailOptions = {
       from: `"Headache Compass" <${process.env.EMAIL_USER}>`,
@@ -80,7 +92,7 @@ export const sendEmailOTP = async (email, otp) => {
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);">
           <div style="padding: 40px 20px; min-height: 100vh;">
             <div style="max-width: 520px; margin: 0 auto;">
-              
+             
               <!-- Header with Logo -->
               <div style="text-align: center; margin-bottom: 40px;">
                 <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 32px; border-radius: 50px; font-weight: 600; font-size: 14px; letter-spacing: 1px;">
@@ -88,9 +100,10 @@ export const sendEmailOTP = async (email, otp) => {
                 </div>
               </div>
 
+
               <!-- Main Card -->
               <div style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); border: 1px solid #f0f0f0;">
-                
+               
                 <!-- Header Section -->
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 48px 40px 40px; text-align: center;">
                   <div style="margin-bottom: 16px; font-size: 48px;">🔐</div>
@@ -101,6 +114,7 @@ export const sendEmailOTP = async (email, otp) => {
                     Enter this code to securely reset your password
                   </p>
                 </div>
+
 
                 <!-- Content Section -->
                 <div style="padding: 48px 40px;">
@@ -117,6 +131,7 @@ export const sendEmailOTP = async (email, otp) => {
                     </p>
                   </div>
 
+
                   <!-- Security Note -->
                   <div style="background: #f8f9fa; border-left: 4px solid #667eea; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
                     <p style="margin: 0; color: #2d3748; font-size: 14px; line-height: 1.7;">
@@ -124,12 +139,14 @@ export const sendEmailOTP = async (email, otp) => {
                     </p>
                   </div>
 
+
                   <!-- Warning Box -->
                   <div style="background: #fff5f5; border-left: 4px solid #fc8181; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
                     <p style="margin: 0; color: #742a2a; font-size: 13px; line-height: 1.6;">
                       <strong>Didn't request this?</strong> Ignore this email and your account remains secure. If you notice unusual activity, contact support immediately.
                     </p>
                   </div>
+
 
                   <!-- Information Box -->
                   <div style="border-top: 1px solid #e2e8f0; padding-top: 24px;">
@@ -139,6 +156,7 @@ export const sendEmailOTP = async (email, otp) => {
                     </p>
                   </div>
                 </div>
+
 
                 <!-- Footer Section -->
                 <div style="background: #f8f9fa; border-top: 1px solid #e2e8f0; padding: 32px 40px;">
@@ -168,6 +186,7 @@ export const sendEmailOTP = async (email, otp) => {
                     </div>
                   </div>
 
+
                   <p style="margin: 0; color: #a0aec0; font-size: 11px; text-align: center; line-height: 1.6;">
                     © 2024 Headache Compass | Secure Medical Portal<br>
                     This is an automated message. Please do not reply to this email.
@@ -181,6 +200,7 @@ export const sendEmailOTP = async (email, otp) => {
       `
     };
 
+
     await transporter.sendMail(mailOptions);
     return { success: true, message: 'OTP sent to email' };
   } catch (error) {
@@ -189,6 +209,7 @@ export const sendEmailOTP = async (email, otp) => {
   }
 };
 
+
 // ========== SMS OTP (Twilio) - Optional ==========
 export const sendSMSOTP = async (phoneNumber, otp) => {
   try {
@@ -196,12 +217,15 @@ export const sendSMSOTP = async (phoneNumber, otp) => {
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
 
+
     if (!accountSid || !authToken || !twilioPhone) {
       console.log('Twilio not configured, skipping SMS');
       return { success: false, message: 'SMS service not configured' };
     }
 
+
     const client = twilio(accountSid, authToken);
+
 
     await client.messages.create({
       body: `Your Headache Management System password reset OTP is: ${otp}. Valid for 5 minutes.`,
@@ -209,12 +233,14 @@ export const sendSMSOTP = async (phoneNumber, otp) => {
       to: phoneNumber
     });
 
+
     return { success: true, message: 'OTP sent to mobile number' };
   } catch (error) {
     console.error('SMS OTP Error:', error);
     return { success: false, message: 'Failed to send SMS OTP' };
   }
 };
+
 
 // ========== WELCOME EMAIL (New Doctor Account) ==========
 export const sendWelcomeEmail = async (email, username, password) => {
@@ -226,6 +252,7 @@ export const sendWelcomeEmail = async (email, username, password) => {
         pass: process.env.EMAIL_PASSWORD
       }
     });
+
 
     const mailOptions = {
       from: `"Headache Compass" <${process.env.EMAIL_USER}>`,
@@ -247,7 +274,7 @@ export const sendWelcomeEmail = async (email, username, password) => {
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);">
           <div style="padding: 40px 20px; min-height: 100vh;">
             <div style="max-width: 520px; margin: 0 auto;">
-              
+             
               <!-- Header with Logo -->
               <div style="text-align: center; margin-bottom: 40px;">
                 <div style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 32px; border-radius: 50px; font-weight: 600; font-size: 14px; letter-spacing: 1px;">
@@ -255,9 +282,10 @@ export const sendWelcomeEmail = async (email, username, password) => {
                 </div>
               </div>
 
+
               <!-- Main Card -->
               <div style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); border: 1px solid #f0f0f0;">
-                
+               
                 <!-- Header Section -->
                 <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 48px 40px 40px; text-align: center;">
                   <div style="margin-bottom: 16px; font-size: 52px;">🎉</div>
@@ -269,9 +297,10 @@ export const sendWelcomeEmail = async (email, username, password) => {
                   </p>
                 </div>
 
+
                 <!-- Content Section -->
                 <div style="padding: 48px 40px;">
-                  
+                 
                   <!-- SECTION 1: Initial Welcome Message -->
                   <div style="margin-bottom: 40px;">
                     <p style="margin: 0; color: #2d3748; font-size: 15px; line-height: 1.8; font-weight: 500;">
@@ -282,16 +311,18 @@ export const sendWelcomeEmail = async (email, username, password) => {
                     </p>
                   </div>
 
+
                   <hr style="border: none; border-top: 2px solid #e2e8f0; margin: 0 0 40px 0;">
+
 
                   <!-- SECTION 2: Login Credentials -->
                   <div style="margin-bottom: 40px;">
                     <h3 style="margin: 0 0 20px 0; color: #2d3748; font-size: 16px; font-weight: 700; letter-spacing: -0.3px;">
                       🔑 Login Credentials
                     </h3>
-                    
+                   
                     <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #10b981; border-radius: 12px; padding: 28px;">
-                      
+                     
                       <!-- Email -->
                       <div style="margin-bottom: 24px;">
                         <p style="margin: 0 0 8px 0; color: #059669; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;">
@@ -301,6 +332,7 @@ export const sendWelcomeEmail = async (email, username, password) => {
                           ${email}
                         </p>
                       </div>
+
 
                       <!-- Password -->
                       <div>
@@ -315,11 +347,14 @@ export const sendWelcomeEmail = async (email, username, password) => {
                       </div>
                     </div>
 
+
                     <!-- Security Notice -->
                    
                   </div>
 
+
                   <hr style="border: none; border-top: 2px solid #e2e8f0; margin: 0 0 40px 0;">
+
 
                   <!-- SECTION 3: Sign In Button -->
                   <div style="text-align: center; margin-bottom: 40px;">
@@ -331,7 +366,9 @@ export const sendWelcomeEmail = async (email, username, password) => {
                     </p>
                   </div>
 
+
                   <hr style="border: none; border-top: 2px solid #e2e8f0; margin: 0 0 40px 0;">
+
 
                   <!-- SECTION 4: Platform Lead Information -->
                   <div style="margin-bottom: 40px;">
@@ -362,7 +399,9 @@ export const sendWelcomeEmail = async (email, username, password) => {
                     </div>
                   </div>
 
+
                   <hr style="border: none; border-top: 2px solid #e2e8f0; margin: 0 0 40px 0;">
+
 
                   <!-- SECTION 5: PDF Attachment Notice -->
                   <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px;">
@@ -374,17 +413,20 @@ export const sendWelcomeEmail = async (email, username, password) => {
                     </p>
                   </div>
 
+
                 </div>
+
 
                 <!-- Footer Section -->
                 <div style="background: #f8f9fa; border-top: 1px solid #e2e8f0; padding: 32px 40px;">
-                  
+                 
                   <p style="margin: 0; color: #a0aec0; font-size: 11px; text-align: center; line-height: 1.6;">
                     © 2026 Headache Compass | Secure Medical Portal<br>
                     This is an automated message. Please do not reply to this email.
                   </p>
                 </div>
               </div>
+
 
               <!-- Support Note -->
               <div style="text-align: center; margin-top: 24px;">
@@ -399,6 +441,7 @@ export const sendWelcomeEmail = async (email, username, password) => {
       `
     };
 
+
     await transporter.sendMail(mailOptions);
     return { success: true, message: 'Welcome email sent' };
   } catch (error) {
@@ -406,3 +449,6 @@ export const sendWelcomeEmail = async (email, username, password) => {
     return { success: false, message: error.message };
   }
 };
+
+
+
