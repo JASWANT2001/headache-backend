@@ -377,23 +377,17 @@ export const sendWelcomeEmail = async (email, username, password) => {
                     </h3>
                     <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; border-left: 4px solid #10b981;">
                       <p style="margin: 0 0 12px 0; color: #2d3748; font-size: 14px; font-weight: 700;">
-                        Dr. Prasanna Vani V
+                        Dr. Prasanna Vani V,
                       </p>
                       <div style="color: #718096; font-size: 13px; line-height: 1.8;">
                         <p style="margin: 0 0 6px 0;">
-                          <strong>Specialist:</strong> Consultant in Pain Medicine
-                        </p>
-                        <p style="margin: 0 0 6px 0;">
-                          M.D., F.I.P.M., E.D.P.M (Part 1), C.C.E.P.
-                        </p>
-                        <p style="margin: 0 0 6px 0;">
-                          JP Neuro Spine Hospital, Krishnagiri
+                          M.D. , F.I.P.M. , E.D.P.M (Part 1), C.C.E.P..C. Consultant in Pain Medicine, JP Neuro Spine Hospital and Pain Management Centre, Krishnagiri.
                         </p>
                         <p style="margin: 0 0 4px 0;">
-                          📞 <strong>8754870054</strong>
+                          Contact- 8754870054
                         </p>
                         <p style="margin: 0;">
-                          ✉️ drprasannavaniv@gmail.com
+                          Email- drprasannavaniv@gmail.com
                         </p>
                       </div>
                     </div>
@@ -449,6 +443,4 @@ export const sendWelcomeEmail = async (email, username, password) => {
     return { success: false, message: error.message };
   }
 };
-
-
 
